@@ -14,7 +14,7 @@ import Register from '../components/Register';
 import Settings from '../components/Settings';
 import { store } from '../store';
 import { push } from 'react-router-redux';
-
+import CardPageTwo from '../components/ComponentFolder1/CardPageTwo';
 const mapStateToProps = state => {
   return {
     appLoaded: state.common.appLoaded,
@@ -49,12 +49,14 @@ class App extends React.Component {
   }
 
   render() {
+    
     if (this.props.appLoaded) {
       return (
         <div>
           <Header
             appName={this.props.appName}
             currentUser={this.props.currentUser} />
+	    <CardPageTwo/>
             <Switch>
             <Route exact path="/" component={Home}/>
             <Route path="/login" component={Login} />
