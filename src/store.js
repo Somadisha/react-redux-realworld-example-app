@@ -11,7 +11,7 @@ export const history = createHistory();
 
 // Build the middleware for intercepting and dispatching navigation actions
 const myRouterMiddleware = routerMiddleware(history);
-
+console.log("hey")
 const getMiddleware = () => {
   if (process.env.NODE_ENV === 'production') {
     return applyMiddleware(myRouterMiddleware, promiseMiddleware, localStorageMiddleware);
