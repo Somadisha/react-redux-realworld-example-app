@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import AllCards from './AllCards'
 import Decks from './Decks'
 
-function MAinPage() {
+function MainPage() {
     
     const Header = styled.div`
         display:flex;
@@ -42,4 +42,4 @@ function MAinPage() {
     )
 }
 
-export default MAinPage
+export default MainPage
