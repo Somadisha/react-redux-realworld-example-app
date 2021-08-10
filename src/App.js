@@ -1,19 +1,18 @@
 import "./App.css";
-
 import React, { useState, useRef, useEffect } from "react";
 import {
     Stage,
     Layer,
     Circle,
     Text,
-    Ellipse,
     Rect,
     Transformer,
     Line,
+    Label,
+    Tag,
 } from "react-konva";
 import { v4 as uuid } from "uuid";
 import { Html } from "react-konva-utils";
-
 const Rectangle = ({
     shapeProps,
     isSelected,
@@ -21,6 +20,7 @@ const Rectangle = ({
     onMove,
     onChange,
     useTool,
+    stage,
 }) => {
     const shapeRef = React.useRef();
     const trRef = React.useRef();
@@ -32,6 +32,17 @@ const Rectangle = ({
             trRef.current.getLayer().batchDraw();
         }
     }, [isSelected]);
+
+    function rotatePoint(pt, a, l) {
+        var angle = a * (Math.PI / 180); // Convert to radians
+
+        var rotatedX = pt.x + Math.cos(angle) * l;
+
+        var rotatedY = pt.y + Math.sin(angle) * l;
+
+        return { x: rotatedX, y: rotatedY };
+    }
+
     return (
         <React.Fragment>
             <Rect
@@ -42,33 +53,281 @@ const Rectangle = ({
                 draggable={!useTool && isSelected}
                 // onDragStart={onMove}
                 // onTouchStart={onMove}
+                // onDragMove={console.log(shapeProps.x, shapeProps.y)}
                 onDragEnd={(e) => {
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const rectWidth = shapeProps.width;
+                    const rectHeight = shapeProps.height;
+                    const rectRotation = shapeProps.rotation;
+
+                    let newX = e.target.x();
+                    let pos1 = { x: e.target.x(), y: e.target.y() };
+                    let pos2 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        rectRotation,
+                        rectWidth
+                    );
+                    let pos4 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        rectRotation + 90,
+                        rectHeight
+                    );
+                    let pos3 = rotatePoint(
+                        { x: pos4.x, y: pos4.y },
+                        rectRotation,
+                        rectWidth
+                    );
+
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newX1 = Math.floor(pos4.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos2.x / gridWidth) * gridWidth;
+                        if (
+                            pos4.x - newX1 <= newX2 - pos2.x &&
+                            pos4.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos4.x - newX1);
+                        } else if (newX2 - pos2.x <= 10) {
+                            newX = newX + (newX2 - pos2.x);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newX1 = Math.floor(pos3.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos1.x / gridWidth) * gridWidth;
+                        if (
+                            pos3.x - newX1 <= newX2 - pos1.x &&
+                            pos3.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos3.x - newX1);
+                        } else if (newX2 - pos1.x <= 10) {
+                            newX = newX + (newX2 - pos1.x);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newX1 = Math.floor(pos2.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos4.x / gridWidth) * gridWidth;
+                        if (
+                            pos2.x - newX1 <= newX2 - pos4.x &&
+                            pos2.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos2.x - newX1);
+                        } else if (newX2 - pos4.x <= 10) {
+                            newX = newX + (newX2 - pos4.x);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newX1 = Math.floor(pos1.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos3.x / gridWidth) * gridWidth;
+                        if (
+                            pos1.x - newX1 <= newX2 - pos3.x &&
+                            pos1.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos1.x - newX1);
+                        } else if (newX2 - pos3.x <= 10) {
+                            newX = newX + (newX2 - pos3.x);
+                        }
+                    }
+
+                    let newY = e.target.y();
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newY1 =
+                            Math.floor(pos1.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos3.y / gridHeight) * gridHeight;
+
+                        if (
+                            pos1.y - newY1 <= newY2 - pos3.y &&
+                            pos1.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos1.y - newY1);
+                        } else if (newY2 - pos3.y <= 10) {
+                            newY = newY + (newY2 - pos3.y);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newY1 =
+                            Math.floor(pos4.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos2.y / gridHeight) * gridHeight;
+                        if (
+                            pos4.y - newY1 <= newY2 - pos2.y &&
+                            pos4.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos4.y - newY1);
+                        } else if (newY2 - pos2.y <= 10) {
+                            newY = newY + (newY2 - pos2.y);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newY1 =
+                            Math.floor(pos3.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos1.y / gridHeight) * gridHeight;
+                        if (
+                            pos3.y - newY1 <= newY2 - pos1.y &&
+                            pos3.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos3.y - newY1);
+                        } else if (newY2 - pos1.y <= 10) {
+                            newY = newY + (newY2 - pos1.y);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newY1 =
+                            Math.floor(pos2.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos4.y / gridHeight) * gridHeight;
+                        if (
+                            pos2.y - newY1 <= newY2 - pos4.y &&
+                            pos2.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos2.y - newY1);
+                        } else if (newY2 - pos4.y <= 10) {
+                            newY = newY + (newY2 - pos4.y);
+                        }
+                    }
+
                     onChange({
                         ...shapeProps,
-                        x: e.target.x(),
-                        y: e.target.y(),
+                        x: newX,
+                        y: newY,
                     });
                 }}
                 onTransformEnd={(e) => {
+                    console.log(stage.scale);
+                    const node = shapeRef.current;
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+                    // we will reset it back
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const rectWidth = node.width() * scaleX;
+                    const rectHeight = node.height() * scaleY;
+                    const rectRotation = node.rotation();
+
+                    let newX = e.target.x();
+                    let pos1 = { x: e.target.x(), y: e.target.y() };
+                    let pos2 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        node.rotation(),
+                        rectWidth
+                    );
+                    let pos4 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        node.rotation() + 90,
+                        rectHeight
+                    );
+                    let pos3 = rotatePoint(
+                        { x: pos4.x, y: pos4.y },
+                        node.rotation(),
+                        rectWidth
+                    );
+
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newX1 = Math.floor(pos4.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos2.x / gridWidth) * gridWidth;
+                        if (
+                            pos4.x - newX1 <= newX2 - pos2.x &&
+                            pos4.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos4.x - newX1);
+                        } else if (newX2 - pos2.x <= 10) {
+                            newX = newX + (newX2 - pos2.x);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newX1 = Math.floor(pos3.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos1.x / gridWidth) * gridWidth;
+                        if (
+                            pos3.x - newX1 <= newX2 - pos1.x &&
+                            pos3.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos3.x - newX1);
+                        } else if (newX2 - pos1.x <= 10) {
+                            newX = newX + (newX2 - pos1.x);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newX1 = Math.floor(pos2.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos4.x / gridWidth) * gridWidth;
+                        if (
+                            pos2.x - newX1 <= newX2 - pos4.x &&
+                            pos2.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos2.x - newX1);
+                        } else if (newX2 - pos4.x <= 10) {
+                            newX = newX + (newX2 - pos4.x);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newX1 = Math.floor(pos1.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos3.x / gridWidth) * gridWidth;
+                        if (
+                            pos1.x - newX1 <= newX2 - pos3.x &&
+                            pos1.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos1.x - newX1);
+                        } else if (newX2 - pos3.x <= 10) {
+                            newX = newX + (newX2 - pos3.x);
+                        }
+                    }
+
+                    let newY = e.target.y();
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newY1 =
+                            Math.floor(pos1.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos3.y / gridHeight) * gridHeight;
+
+                        if (
+                            pos1.y - newY1 <= newY2 - pos3.y &&
+                            pos1.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos1.y - newY1);
+                        } else if (newY2 - pos3.y <= 10) {
+                            newY = newY + (newY2 - pos3.y);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newY1 =
+                            Math.floor(pos4.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos2.y / gridHeight) * gridHeight;
+                        if (
+                            pos4.y - newY1 <= newY2 - pos2.y &&
+                            pos4.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos4.y - newY1);
+                        } else if (newY2 - pos2.y <= 10) {
+                            newY = newY + (newY2 - pos2.y);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newY1 =
+                            Math.floor(pos3.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos1.y / gridHeight) * gridHeight;
+                        if (
+                            pos3.y - newY1 <= newY2 - pos1.y &&
+                            pos3.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos3.y - newY1);
+                        } else if (newY2 - pos1.y <= 10) {
+                            newY = newY + (newY2 - pos1.y);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newY1 =
+                            Math.floor(pos2.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos4.y / gridHeight) * gridHeight;
+                        if (
+                            pos2.y - newY1 <= newY2 - pos4.y &&
+                            pos2.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos2.y - newY1);
+                        } else if (newY2 - pos4.y <= 10) {
+                            newY = newY + (newY2 - pos4.y);
+                        }
+                    }
+
                     // transformer is changing scale of the node
                     // and NOT its width or height
                     // but in the store we have only width and height
                     // to match the data better we will reset scale on transform end
-                    const node = shapeRef.current;
-                    const scaleX = node.scaleX();
-                    const scaleY = node.scaleY();
-                    const matrix = node.getAbsoluteTransform().getMatrix();
-                    console.log(node.rotation());
-                    // we will reset it back
-                    node.scaleX(1);
-                    node.scaleY(1);
+
                     onChange({
                         ...shapeProps,
-                        x: node.x(),
-                        y: node.y(),
+                        x: newX,
+                        y: newY,
+
                         // set minimal value
-                        width: Math.max(5, node.width() * scaleX),
-                        height: Math.max(node.height() * scaleY),
+                        width: node.width() * scaleX,
+                        height: node.height() * scaleY,
                         rotation: node.rotation(),
                     });
                 }}
@@ -96,6 +355,7 @@ const Circles = ({
     onMove,
     onChange,
     useTool,
+    stage,
 }) => {
     const shapeRef = React.useRef();
     const trRef = React.useRef();
@@ -119,10 +379,48 @@ const Circles = ({
                 // onDragStart={onMove}
                 // onTouchStart={onMove}
                 onDragEnd={(e) => {
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const circRadius = shapeProps.radius;
+                    let newX = e.target.x();
+                    let newX1 =
+                        Math.floor((newX - circRadius) / gridWidth) * gridWidth;
+                    let newX2 =
+                        Math.ceil((newX + circRadius) / gridWidth) * gridWidth;
+                    // console.log(newX1, newX, newX2)
+                    // console.log(newX-newX1+circRadius, newX, newX2-newX-circRadius)
+                    if (
+                        newX - newX1 - circRadius <=
+                        newX2 - newX - circRadius &&
+                        newX - newX1 - circRadius <= 10
+                    ) {
+                        newX = newX1 + circRadius;
+                    } else if (newX2 - newX - circRadius <= 10) {
+                        newX = newX2 - circRadius;
+                    }
+                    let newY = e.target.y();
+                    let newY1 =
+                        Math.floor((newY - circRadius) / gridHeight) *
+                        gridHeight;
+                    let newY2 =
+                        Math.ceil((newY + circRadius) / gridHeight) *
+                        gridHeight;
+                    // console.log(newY1, newY, newY2)
+                    // console.log(newY-newY1+circRadius, newY, newY2-newY-circRadius)
+                    if (
+                        newY - newY1 - circRadius <=
+                        newY2 - newY - circRadius &&
+                        newY - newY1 - circRadius <= 10
+                    ) {
+                        newY = newY1 + circRadius;
+                    } else if (newY2 - newY - circRadius <= 10) {
+                        newY = newY2 - circRadius;
+                    }
                     onChange({
                         ...shapeProps,
-                        x: e.target.x(),
-                        y: e.target.y(),
+                        x: newX,
+                        y: newY,
                     });
                 }}
                 onTransformEnd={(e) => {
@@ -137,15 +435,56 @@ const Circles = ({
                     // we will reset it back
                     node.scaleX(1);
                     node.scaleY(1);
+
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const circRadius = Math.max(
+                        node.radius() * scaleX,
+                        node.radius() * scaleY
+                    );
+                    let newX = e.target.x();
+                    let newX1 =
+                        Math.floor((newX - circRadius) / gridWidth) * gridWidth;
+                    let newX2 =
+                        Math.ceil((newX + circRadius) / gridWidth) * gridWidth;
+
+                    // console.log(newX1, newX, newX2)
+                    // console.log(newX-newX1+circRadius, newX, newX2-newX-circRadius)
+                    if (
+                        newX - newX1 - circRadius <=
+                        newX2 - newX - circRadius &&
+                        newX - newX1 - circRadius <= 10
+                    ) {
+                        newX = newX1 + circRadius;
+                    } else if (newX2 - newX - circRadius <= 10) {
+                        newX = newX2 - circRadius;
+                    }
+                    let newY = e.target.y();
+                    let newY1 =
+                        Math.floor((newY - circRadius) / gridHeight) *
+                        gridHeight;
+                    let newY2 =
+                        Math.ceil((newY + circRadius) / gridHeight) *
+                        gridHeight;
+                    // console.log(newY1, newY, newY2)
+                    // console.log(newY-newY1+circRadius, newY, newY2-newY-circRadius)
+                    if (
+                        newY - newY1 - circRadius <=
+                        newY2 - newY - circRadius &&
+                        newY - newY1 - circRadius <= 10
+                    ) {
+                        newY = newY1 + circRadius;
+                    } else if (newY2 - newY - circRadius <= 10) {
+                        newY = newY2 - circRadius;
+                    }
+
                     onChange({
                         ...shapeProps,
-                        x: node.x(),
-                        y: node.y(),
+                        x: newX,
+                        y: newY,
                         // set minimal value
-                        radius: Math.max(
-                            node.radius() * scaleX,
-                            node.radius() * scaleY
-                        ),
+                        radius: circRadius,
                         rotation: node.rotation(),
                     });
                 }}
@@ -153,6 +492,7 @@ const Circles = ({
             {isSelected && (
                 <Transformer
                     ref={trRef}
+                    rotateEnabled={false}
                     boundBoxFunc={(oldBox, newBox) => {
                         // limit resize
                         if (newBox.radius < 5) {
@@ -173,6 +513,7 @@ const Texts = ({
     onMove,
     onChange,
     useTool,
+    stage,
 }) => {
     const shapeRef = React.useRef();
     const trRef = React.useRef();
@@ -185,6 +526,16 @@ const Texts = ({
         }
     }, [isSelected]);
 
+    function rotatePoint(pt, a, l) {
+        var angle = a * (Math.PI / 180); // Convert to radians
+
+        var rotatedX = pt.x + Math.cos(angle) * l;
+
+        var rotatedY = pt.y + Math.sin(angle) * l;
+
+        return { x: rotatedX, y: rotatedY };
+    }
+
     return (
         <React.Fragment>
             <Text
@@ -196,10 +547,134 @@ const Texts = ({
                 // onDragStart={onMove}
                 // onTouchStart={onMove}
                 onDragEnd={(e) => {
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const rectWidth = shapeProps.width;
+                    const rectHeight = shapeProps.height;
+
+                    const rectRotation = shapeProps.rotation;
+
+                    let newX = e.target.x();
+                    let pos1 = { x: e.target.x(), y: e.target.y() };
+                    let pos2 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        rectRotation,
+                        rectWidth
+                    );
+                    let pos4 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        rectRotation + 90,
+                        rectHeight
+                    );
+                    let pos3 = rotatePoint(
+                        { x: pos4.x, y: pos4.y },
+                        rectRotation,
+                        rectWidth
+                    );
+
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newX1 = Math.floor(pos4.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos2.x / gridWidth) * gridWidth;
+                        if (
+                            pos4.x - newX1 <= newX2 - pos2.x &&
+                            pos4.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos4.x - newX1);
+                        } else if (newX2 - pos2.x <= 10) {
+                            newX = newX + (newX2 - pos2.x);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newX1 = Math.floor(pos3.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos1.x / gridWidth) * gridWidth;
+                        if (
+                            pos3.x - newX1 <= newX2 - pos1.x &&
+                            pos3.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos3.x - newX1);
+                        } else if (newX2 - pos1.x <= 10) {
+                            newX = newX + (newX2 - pos1.x);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newX1 = Math.floor(pos2.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos4.x / gridWidth) * gridWidth;
+                        if (
+                            pos2.x - newX1 <= newX2 - pos4.x &&
+                            pos2.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos2.x - newX1);
+                        } else if (newX2 - pos4.x <= 10) {
+                            newX = newX + (newX2 - pos4.x);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newX1 = Math.floor(pos1.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos3.x / gridWidth) * gridWidth;
+                        if (
+                            pos1.x - newX1 <= newX2 - pos3.x &&
+                            pos1.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos1.x - newX1);
+                        } else if (newX2 - pos3.x <= 10) {
+                            newX = newX + (newX2 - pos3.x);
+                        }
+                    }
+
+                    let newY = e.target.y();
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newY1 =
+                            Math.floor(pos1.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos3.y / gridHeight) * gridHeight;
+
+                        if (
+                            pos1.y - newY1 <= newY2 - pos3.y &&
+                            pos1.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos1.y - newY1);
+                        } else if (newY2 - pos3.y <= 10) {
+                            newY = newY + (newY2 - pos3.y);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newY1 =
+                            Math.floor(pos4.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos2.y / gridHeight) * gridHeight;
+                        if (
+                            pos4.y - newY1 <= newY2 - pos2.y &&
+                            pos4.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos4.y - newY1);
+                        } else if (newY2 - pos2.y <= 10) {
+                            newY = newY + (newY2 - pos2.y);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newY1 =
+                            Math.floor(pos3.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos1.y / gridHeight) * gridHeight;
+                        if (
+                            pos3.y - newY1 <= newY2 - pos1.y &&
+                            pos3.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos3.y - newY1);
+                        } else if (newY2 - pos1.y <= 10) {
+                            newY = newY + (newY2 - pos1.y);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newY1 =
+                            Math.floor(pos2.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos4.y / gridHeight) * gridHeight;
+                        if (
+                            pos2.y - newY1 <= newY2 - pos4.y &&
+                            pos2.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos2.y - newY1);
+                        } else if (newY2 - pos4.y <= 10) {
+                            newY = newY + (newY2 - pos4.y);
+                        }
+                    }
+
                     onChange({
                         ...shapeProps,
-                        x: e.target.x(),
-                        y: e.target.y(),
+                        x: newX,
+                        y: newY,
                     });
                 }}
                 onTransformEnd={(e) => {
@@ -214,14 +689,138 @@ const Texts = ({
                     // we will reset it back
                     node.scaleX(1);
                     node.scaleY(1);
+                    const gridWidth = window.innerWidth / (5 * parseInt(stage));
+                    const gridHeight =
+                        window.innerHeight / (10 * parseInt(stage));
+                    const rectWidth = node.width() * scaleX;
+                    const rectHeight = node.height() * scaleY;
+
+                    const rectRotation = node.rotation();
+
+                    let newX = e.target.x();
+                    let pos1 = { x: e.target.x(), y: e.target.y() };
+                    let pos2 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        node.rotation(),
+                        rectWidth
+                    );
+                    let pos4 = rotatePoint(
+                        { x: pos1.x, y: pos1.y },
+                        node.rotation() + 90,
+                        rectHeight
+                    );
+                    let pos3 = rotatePoint(
+                        { x: pos4.x, y: pos4.y },
+                        node.rotation(),
+                        rectWidth
+                    );
+
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newX1 = Math.floor(pos4.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos2.x / gridWidth) * gridWidth;
+                        if (
+                            pos4.x - newX1 <= newX2 - pos2.x &&
+                            pos4.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos4.x - newX1);
+                        } else if (newX2 - pos2.x <= 10) {
+                            newX = newX + (newX2 - pos2.x);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newX1 = Math.floor(pos3.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos1.x / gridWidth) * gridWidth;
+                        if (
+                            pos3.x - newX1 <= newX2 - pos1.x &&
+                            pos3.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos3.x - newX1);
+                        } else if (newX2 - pos1.x <= 10) {
+                            newX = newX + (newX2 - pos1.x);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newX1 = Math.floor(pos2.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos4.x / gridWidth) * gridWidth;
+                        if (
+                            pos2.x - newX1 <= newX2 - pos4.x &&
+                            pos2.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos2.x - newX1);
+                        } else if (newX2 - pos4.x <= 10) {
+                            newX = newX + (newX2 - pos4.x);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newX1 = Math.floor(pos1.x / gridWidth) * gridWidth;
+                        let newX2 = Math.ceil(pos3.x / gridWidth) * gridWidth;
+                        if (
+                            pos1.x - newX1 <= newX2 - pos3.x &&
+                            pos1.x - newX1 <= 10
+                        ) {
+                            newX = newX - (pos1.x - newX1);
+                        } else if (newX2 - pos3.x <= 10) {
+                            newX = newX + (newX2 - pos3.x);
+                        }
+                    }
+
+                    let newY = e.target.y();
+                    if (rectRotation >= 0 && rectRotation < 90) {
+                        let newY1 =
+                            Math.floor(pos1.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos3.y / gridHeight) * gridHeight;
+
+                        if (
+                            pos1.y - newY1 <= newY2 - pos3.y &&
+                            pos1.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos1.y - newY1);
+                        } else if (newY2 - pos3.y <= 10) {
+                            newY = newY + (newY2 - pos3.y);
+                        }
+                    } else if (rectRotation >= 90 && rectRotation < 180) {
+                        let newY1 =
+                            Math.floor(pos4.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos2.y / gridHeight) * gridHeight;
+                        if (
+                            pos4.y - newY1 <= newY2 - pos2.y &&
+                            pos4.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos4.y - newY1);
+                        } else if (newY2 - pos2.y <= 10) {
+                            newY = newY + (newY2 - pos2.y);
+                        }
+                    } else if (rectRotation >= -180 && rectRotation < -90) {
+                        let newY1 =
+                            Math.floor(pos3.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos1.y / gridHeight) * gridHeight;
+                        if (
+                            pos3.y - newY1 <= newY2 - pos1.y &&
+                            pos3.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos3.y - newY1);
+                        } else if (newY2 - pos1.y <= 10) {
+                            newY = newY + (newY2 - pos1.y);
+                        }
+                    } else if (rectRotation >= -90 && rectRotation < 0) {
+                        let newY1 =
+                            Math.floor(pos2.y / gridHeight) * gridHeight;
+                        let newY2 = Math.ceil(pos4.y / gridHeight) * gridHeight;
+                        if (
+                            pos2.y - newY1 <= newY2 - pos4.y &&
+                            pos2.y - newY1 <= 10
+                        ) {
+                            newY = newY - (pos2.y - newY1);
+                        } else if (newY2 - pos4.y <= 10) {
+                            newY = newY + (newY2 - pos4.y);
+                        }
+                    }
+
                     onChange({
                         ...shapeProps,
-                        x: node.x(),
-                        y: node.y(),
+                        x: newX,
+                        y: newY,
                         // set minimal value
 
-                        width: Math.max(5, node.width() * scaleX),
-                        height: Math.max(node.height() * scaleY),
+                        width: node.width() * scaleX,
+                        height: node.height() * scaleY,
                         rotation: node.rotation(),
                     });
                 }}
@@ -340,8 +939,8 @@ let history = [{ shapes: [], lines: [] }];
 let historyStep = 0;
 
 export default function App() {
-    const [circles, setCircles] = useState([]);
-    const [rectangles, setRectangles] = useState([]);
+    const [scale, setScale] = useState(1);
+    const [stage, setStage] = useState({ x: 0, y: 0 });
     const [shapes, setShapes] = useState([]);
     const [selectedId, selectShape] = useState(null);
     const [textEdit, setTextEdit] = useState(false);
@@ -352,30 +951,60 @@ export default function App() {
     const [useTool, setUseTool] = useState(false);
     const [handleDraw, setHandleDraw] = useState(false);
 
-    const gridWidth = window.innerWidth / 10;
-    const gridHeight = window.innerHeight / 5;
+    const handleWheel = (e) => {
+        e.evt.preventDefault();
 
-    const linesA = [];
-    const linesB = [];
+        const scaleBy = 1.2;
+        const stage = e.target.getStage();
+        const oldScale = stage.scaleX();
+        const mousePointTo = {
+            x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+            y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+        };
 
-    for (let i = 0; i < window.innerHeight; i = i + gridHeight) {
-        linesA.push(
-            <Line
-                strokeWidth={0.5}
-                stroke={"gray"}
-                points={[0, i, window.innerWidth, i]}
-            />
-        );
-    }
-    for (let i = 0; i < window.innerWidth; i = i + gridWidth) {
-        linesB.push(
-            <Line
-                strokeWidth={0.5}
-                stroke={"gray"}
-                points={[i, 0, i, window.innerHeight]}
-            />
-        );
-    }
+        const newScale =
+            e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        const newX =
+            (stage.getPointerPosition().x / newScale - mousePointTo.x) *
+            newScale;
+        const newY =
+            (stage.getPointerPosition().y / newScale - mousePointTo.y) *
+            newScale;
+        // console.log(oldScale, newScale);
+        // console.log(newX, newY)
+        // console.log(e.evt.deltaY)
+        if (newScale < 1 || newX >= 0 || newY >= 0) {
+            setScale(1);
+            setStage({ x: 0, y: 0 });
+            gridLines(5, 10);
+        } else {
+            setScale(newScale);
+            setStage({ x: newX, y: newY });
+            gridLines(5 * parseInt(newScale), 10 * parseInt(newScale));
+        }
+    };
+
+    const [linesA, setLinesA] = useState([]);
+    const [linesB, setLinesB] = useState([]);
+    const gridLines = (a, b) => {
+        const gridWidth = window.innerWidth / a;
+        const gridHeight = window.innerHeight / b;
+        setLinesA([]);
+        setLinesB([]);
+
+        for (let i = 0; i <= window.innerHeight; i = i + gridHeight) {
+            setLinesA((prevData) => [
+                ...prevData,
+                [0, i, window.innerWidth, i],
+            ]);
+        }
+        for (let i = 0; i <= window.innerWidth; i = i + gridWidth) {
+            setLinesB((prevData) => [
+                ...prevData,
+                [i, 0, i, window.innerHeight],
+            ]);
+        }
+    };
 
     const handleUndo = () => {
         console.log("undo");
@@ -400,6 +1029,7 @@ export default function App() {
     };
 
     const handleMouseDown = (e) => {
+        // console.log(e.target.getStage().getPointerPosition())
         if (useTool) {
             isDrawing.current = true;
             // const transform = e.target.getAbsoluteTransform().copy()
@@ -508,7 +1138,7 @@ export default function App() {
         setEditShape((shape) => ({ ...shape, text: e.target.value }));
         setShapes(
             shapes.map((elem) => {
-                if (elem.id == selectedId) {
+                if (elem.id === selectedId) {
                     pos = { ...elem, text: e.target.value };
                     return pos;
                 }
@@ -533,6 +1163,7 @@ export default function App() {
             history = [{ shapes: data[0], lines: data[1] }];
             // historyStep += 1;
         }
+        gridLines(5, 10);
     }, []);
 
     return (
@@ -550,13 +1181,36 @@ export default function App() {
                 onMousemove={handleMouseMove}
                 onTouchMove={handleMouseMove}
                 onMouseup={handleMouseUp}
+                onWheel={handleWheel}
+                scaleX={scale}
+                scaleY={scale}
+                x={stage.x}
+                y={stage.y}
             >
                 <Layer>
-                    {linesA}
-                    {linesB}
+                    {linesA.map((eachLine, i) => {
+                        return (
+                            <Line
+                                key={i}
+                                strokeWidth={1}
+                                stroke={"gray"}
+                                points={eachLine}
+                            />
+                        );
+                    })}
+                    {linesB.map((eachLine, i) => {
+                        return (
+                            <Line
+                                key={i}
+                                strokeWidth={1}
+                                stroke={"gray"}
+                                points={eachLine}
+                            />
+                        );
+                    })}
 
                     {shapes.map((eachShape, i) => {
-                        if (eachShape.name == "rectangle") {
+                        if (eachShape.name === "rectangle") {
                             return (
                                 <Rectangle
                                     key={i}
@@ -571,7 +1225,7 @@ export default function App() {
                                     onChange={(newAttrs) => {
                                         const rects = shapes.slice();
                                         rects[i] = newAttrs;
-                                        setShapes(rects);
+
                                         history = history.slice(
                                             0,
                                             historyStep + 1
@@ -580,11 +1234,14 @@ export default function App() {
                                             { shapes: rects, lines: lines },
                                         ]);
                                         historyStep += 1;
+                                        onDelete(eachShape);
+                                        setShapes(rects);
                                     }}
                                     useTool={useTool}
+                                    stage={scale}
                                 />
                             );
-                        } else if (eachShape.name == "circle") {
+                        } else if (eachShape.name === "circle") {
                             return (
                                 <Circles
                                     key={i}
@@ -610,9 +1267,10 @@ export default function App() {
                                         historyStep += 1;
                                     }}
                                     useTool={useTool}
+                                    stage={scale}
                                 />
                             );
-                        } else if (eachShape.name == "text") {
+                        } else if (eachShape.name === "text") {
                             return (
                                 <Texts
                                     key={i}
@@ -640,9 +1298,10 @@ export default function App() {
                                         historyStep += 1;
                                     }}
                                     useTool={useTool}
+                                    stage={scale}
                                 />
                             );
-                        } else if (eachShape.name == "line") {
+                        } else if (eachShape.name === "line") {
                             return (
                                 <Lines
                                     key={i}
@@ -675,44 +1334,42 @@ export default function App() {
                                 />
                             );
                         }
+                        else if (eachShape.name === "button") {
+                            return (
+                                <Label
+                                    draggable
+                                    x={eachShape.x}
+                                    y={eachShape.y}
+                                    onClick={() => alert('clicked')}
+                                >
+
+                                    <Tag
+                                        fill={'#6200ee'}
+
+                                        fontFamily={'Calibri'}
+                                        fontSize={18}
+                                        padding={5}
+
+                                        lineJoin={'round'}
+                                        cornerRadius={5}
+                                    />
+                                    <Text
+                                        height={40}
+                                        width={100}
+                                        align="center"
+                                        verticalAlign="middle"
+                                        text={"BUTTON"}
+                                        fontFamily={'Calibri'}
+                                        fontSize={18}
+                                        padding={10}
+                                        fill={'white'}
+                                    />
+                                </Label>
+                            )
+                        }
                     })}
-                    {/* <Line
-             x={200}
-             y={300}
-              points={[100, 100, 200, 200]}
-              stroke="#df4b26"
-              strokeWidth={5}
-              tension={0.5}
-              lineCap="round"
-              globalCompositeOperation={
-                'source-over'
-              }
-            /> */}
-                    {/* {lines.map((line, i) => (
-            <Lines
-              key={i}
-              points={line.points}
-              tool={line.tool}
-              shapeProps={line}
-              isSelected={line.id === selectedId}
-              onSelect={() => {
-                setUseTool(false)
-                onDelete(line);
-                selectShape(line.id);
-                
-              }}
-              onMove={()=>onDelete(line)}
-              onChange={(newAttrs) => {
-                const rects = lines.slice();
-                rects[i] = newAttrs;
-                setLines(rects);
-              }}
-            
-            />
-          ))} */}
 
                     <Circle
-                        name="draggableCircle1"
                         x={50}
                         y={70}
                         radius={25}
@@ -731,12 +1388,53 @@ export default function App() {
                         // onTap={()=>setUseTool(false)}
                         // onDragStart={()=>setUseTool(false)}
                         onDragEnd={(e) => {
+                            const gridWidth =
+                                window.innerWidth / (5 * parseInt(scale));
+                            const gridHeight =
+                                window.innerHeight / (10 * parseInt(scale));
+                            const circRadius = 25;
+                            let newX = e.target.x();
+                            let newX1 =
+                                Math.floor((newX - circRadius) / gridWidth) *
+                                gridWidth;
+                            let newX2 =
+                                Math.ceil((newX + circRadius) / gridWidth) *
+                                gridWidth;
+                            // console.log(newX1, newX, newX2)
+                            // console.log(newX-newX1+circRadius, newX, newX2-newX-circRadius)
+                            if (
+                                newX - newX1 - circRadius <=
+                                newX2 - newX - circRadius &&
+                                newX - newX1 - circRadius <= 10
+                            ) {
+                                newX = newX1 + circRadius;
+                            } else if (newX2 - newX - circRadius <= 10) {
+                                newX = newX2 - circRadius;
+                            }
+                            let newY = e.target.y();
+                            let newY1 =
+                                Math.floor((newY - circRadius) / gridHeight) *
+                                gridHeight;
+                            let newY2 =
+                                Math.ceil((newY + circRadius) / gridHeight) *
+                                gridHeight;
+                            // console.log(newY1, newY, newY2)
+                            // console.log(newY-newY1+circRadius, newY, newY2-newY-circRadius)
+                            if (
+                                newY - newY1 - circRadius <=
+                                newY2 - newY - circRadius &&
+                                newY - newY1 - circRadius <= 10
+                            ) {
+                                newY = newY1 + circRadius;
+                            } else if (newY2 - newY - circRadius <= 10) {
+                                newY = newY2 - circRadius;
+                            }
                             // push new circle to view
                             // note that we must push circle first before returning draggable circle
                             // because e.target.x returns draggable circle's positions
                             const pos = {
-                                x: e.target.x(),
-                                y: e.target.y(),
+                                x: newX,
+                                y: newY,
                                 radius: 25,
                                 stroke: "black",
                                 id: uuid(),
@@ -745,7 +1443,7 @@ export default function App() {
                             };
 
                             setShapes((prevCircles) => [...prevCircles, pos]);
-                            console.log(shapes);
+
                             // return draggable circle to original position
                             // notice the dot (.) before "draggableCircle"
                             var stage = stageRef.current;
@@ -781,18 +1479,59 @@ export default function App() {
                         // onTap={()=>setUseTool(false)}
                         // onDragStart={()=>setUseTool(false)}
                         onDragEnd={(e) => {
+                            const gridWidth =
+                                window.innerWidth / (5 * parseInt(scale));
+                            const gridHeight =
+                                window.innerHeight / (10 * parseInt(scale));
+                            const rectWidth = 50;
+                            const rectHeight = 50;
+
+                            let newX = e.target.x();
+                            let newX1 =
+                                Math.floor(newX / gridWidth) * gridWidth;
+                            let newX2 =
+                                Math.ceil((newX + rectWidth) / gridWidth) *
+                                gridWidth;
+                            console.log(newX1, newX, newX2);
+                            if (
+                                newX - newX1 <= newX2 - newX - rectWidth &&
+                                newX - newX1 <= 10
+                            ) {
+                                newX = newX1;
+                            } else if (newX2 - newX - rectWidth <= 10) {
+                                newX = newX2 - rectWidth;
+                            }
+
+                            let newY = e.target.y();
+                            let newY1 =
+                                Math.floor(newY / gridHeight) * gridHeight;
+                            let newY2 =
+                                Math.ceil((newY + rectHeight) / gridHeight) *
+                                gridHeight;
+
+                            console.log(newY1, newY, newY2);
+                            if (
+                                newY - newY1 <= newY2 - newY - rectHeight &&
+                                newY - newY1 <= 10
+                            ) {
+                                newY = newY1;
+                            } else if (newY2 - newY - rectHeight <= 10) {
+                                newY = newY2 - rectHeight;
+                            }
+
                             // push new circle to view
                             // note that we must push circle first before returning draggable circle
                             // because e.target.x returns draggable circle's positions
                             const pos = {
-                                x: e.target.x(),
-                                y: e.target.y(),
+                                x: newX,
+                                y: newY,
                                 stroke: "black",
-                                width: 50,
-                                height: 50,
+                                width: rectWidth,
+                                height: rectHeight,
                                 id: uuid(),
                                 fill: "green",
                                 name: "rectangle",
+                                rotation: 0,
                             };
                             setShapes((prevRectangles) => [
                                 ...prevRectangles,
@@ -833,12 +1572,52 @@ export default function App() {
                         // onTap={()=>setUseTool(false)}
                         // onDragStart={()=>setUseTool(false)}
                         onDragEnd={(e) => {
+                            const gridWidth =
+                                window.innerWidth / (5 * parseInt(scale));
+                            const gridHeight =
+                                window.innerHeight / (10 * parseInt(scale));
+                            const rectWidth = 40;
+                            const rectHeight = 100;
+
+                            let newX = e.target.x();
+                            let newX1 =
+                                Math.floor(newX / gridWidth) * gridWidth;
+                            let newX2 =
+                                Math.ceil((newX + rectWidth) / gridWidth) *
+                                gridWidth;
+                            console.log(newX1, newX, newX2);
+                            if (
+                                newX - newX1 <= newX2 - newX - rectWidth &&
+                                newX - newX1 <= 10
+                            ) {
+                                newX = newX1;
+                            } else if (newX2 - newX - rectWidth <= 10) {
+                                newX = newX2 - rectWidth;
+                            }
+
+                            let newY = e.target.y();
+                            let newY1 =
+                                Math.floor(newY / gridHeight) * gridHeight;
+                            let newY2 =
+                                Math.ceil((newY + rectHeight) / gridHeight) *
+                                gridHeight;
+
+                            console.log(newY1, newY, newY2);
+                            if (
+                                newY - newY1 <= newY2 - newY - rectHeight &&
+                                newY - newY1 <= 10
+                            ) {
+                                newY = newY1;
+                            } else if (newY2 - newY - rectHeight <= 10) {
+                                newY = newY2 - rectHeight;
+                            }
+
                             // push new circle to view
                             // note that we must push circle first before returning draggable circle
                             // because e.target.x returns draggable circle's positions
                             const pos = {
-                                x: e.target.x(),
-                                y: e.target.y(),
+                                x: newX,
+                                y: newY,
                                 id: uuid(),
                                 text: "T",
                                 width: 40,
@@ -846,6 +1625,7 @@ export default function App() {
                                 height: 100,
                                 fontSize: 50,
                                 name: "text",
+                                rotation: 0,
                             };
                             setShapes((prevTexts) => [...prevTexts, pos]);
 
@@ -861,6 +1641,137 @@ export default function App() {
                             historyStep += 1;
                         }}
                     />
+                    <Label
+                        x={10}
+                        y={210}
+                        id="button1"
+                        onClick={() => alert('clicked')}
+                    >
+
+                        <Tag
+                            fill={'#6200ee'}
+
+                            fontFamily={'Calibri'}
+                            fontSize={18}
+                            padding={5}
+                            lineJoin={'round'}
+                            cornerRadius={5}
+                        />
+                        <Text
+                            align="center"
+                            verticalAlign="middle"
+                            text={"BUTTON"}
+                            height={40}
+                            width={100}
+                            fontFamily={'Calibri'}
+                            fontSize={18}
+                            padding={10}
+                            fill={'white'}
+                        />
+                    </Label>
+                    <Label
+                        x={10}
+                        y={210}
+                        name="draggablebutton"
+                        id="button1"
+                        draggable={!useTool}
+                        // onClick={()=>setUseTool(false)}
+                        // onTap={()=>setUseTool(false)}
+                        // onDragStart={()=>setUseTool(false)}
+                        onDragEnd={(e) => {
+                            const gridWidth =
+                                window.innerWidth / (5 * parseInt(scale));
+                            const gridHeight =
+                                window.innerHeight / (10 * parseInt(scale));
+                            const rectWidth = 100;
+                            const rectHeight = 40;
+
+                            let newX = e.target.x();
+                            let newX1 =
+                                Math.floor(newX / gridWidth) * gridWidth;
+                            let newX2 =
+                                Math.ceil((newX + rectWidth) / gridWidth) *
+                                gridWidth;
+                            console.log(newX1, newX, newX2);
+                            if (
+                                newX - newX1 <= newX2 - newX - rectWidth &&
+                                newX - newX1 <= 10
+                            ) {
+                                newX = newX1;
+                            } else if (newX2 - newX - rectWidth <= 10) {
+                                newX = newX2 - rectWidth;
+                            }
+
+                            let newY = e.target.y();
+                            let newY1 =
+                                Math.floor(newY / gridHeight) * gridHeight;
+                            let newY2 =
+                                Math.ceil((newY + rectHeight) / gridHeight) *
+                                gridHeight;
+
+                            console.log(newY1, newY, newY2);
+                            if (
+                                newY - newY1 <= newY2 - newY - rectHeight &&
+                                newY - newY1 <= 10
+                            ) {
+                                newY = newY1;
+                            } else if (newY2 - newY - rectHeight <= 10) {
+                                newY = newY2 - rectHeight;
+                            }
+
+                            // push new circle to view
+                            // note that we must push circle first before returning draggable circle
+                            // because e.target.x returns draggable circle's positions
+                            const pos = {
+                                x: newX,
+                                y: newY,
+                                id: uuid(),
+                                height: 40,
+                                width: 100,
+                                name: "button",
+                                rotation: 0,
+                            };
+                            setShapes((prevRectangles) => [
+                                ...prevRectangles,
+                                pos,
+                            ]);
+
+                            // return draggable circle to original position
+                            // notice the dot (.) before "draggableCircle"
+                            var stage = stageRef.current;
+                            var draggableButton =
+                                stage.findOne(".draggablebutton");
+                            draggableButton.position({ x: 10, y: 210 });
+                            history = history.slice(0, historyStep + 1);
+                            history = history.concat([
+                                { shapes: [...shapes, pos], lines: lines },
+                            ]);
+                            historyStep += 1;
+                        }}
+                    >
+
+                        <Tag
+                            fill={'#6200ee'}
+
+                            fontFamily={'Calibri'}
+                            fontSize={18}
+                            padding={5}
+
+                            lineJoin={'round'}
+                            cornerRadius={5}
+                        />
+                        <Text
+                            align="center"
+                            verticalAlign="middle"
+                            text={"BUTTON"}
+                            fontFamily={'Calibri'}
+                            fontSize={18}
+                            height={40}
+                            width={100}
+                            padding={10}
+                            fill={'white'}
+                        />
+                    </Label>
                     <Html>
                         <div>
                             <input
@@ -883,7 +1794,7 @@ export default function App() {
                                 type="button"
                                 value="Pencil"
                                 style={
-                                    tool == "pen" && useTool
+                                    tool === "pen" && useTool
                                         ? { backgroundColor: "aqua" }
                                         : null
                                 }
